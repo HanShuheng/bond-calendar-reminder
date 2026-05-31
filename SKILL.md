@@ -19,7 +19,6 @@ metadata:
   optional_config:
     - subscribe_reminder_schedule
     - listing_reminder_schedule
-    - listing_tracking_max_days
   legacy_optional_config:
     - subscribe_reminder_times
   runtime_data_dir: ~/cow/bond_reminders

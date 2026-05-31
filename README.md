@@ -191,8 +191,7 @@ nano ~/cow/bond_reminders/config.json
     {"days_offset": -1, "time": "12:00", "label": "上市前一天 12:00"},
     {"days_offset": 0, "time": "08:30", "label": "上市当天 08:30，开盘前 1 小时"},
     {"days_offset": 0, "time": "13:00", "label": "上市当天 13:00"}
-  ],
-  "listing_tracking_max_days": 180
+  ]
 }
 ```
 
@@ -206,7 +205,6 @@ nano ~/cow/bond_reminders/config.json
 | `data_source.headers` | 否 | 请求数据源时附加的 HTTP headers |
 | `subscribe_reminder_schedule` | 否 | 当天申购提醒计划，每项包含 `time` 和 `label` |
 | `listing_reminder_schedule` | 否 | 上市提醒计划，每项包含 `days_offset`、`time` 和 `label` |
-| `listing_tracking_max_days` | 否 | 暂未公布上市日时的最长追踪天数，默认 `180` |
 
 也可以用环境变量临时覆盖日历接口：
 
