@@ -45,7 +45,10 @@ DAILY_SUBSCRIBE_FILE = DATA_DIR / "daily_subscribe.json"
 TASKS_FILE = WORKSPACE / "scheduler" / "tasks.json"
 WEIXIN_CREDS_FILE = Path("~/.weixin_cow_credentials.json").expanduser()
 
-DEFAULT_SUBSCRIBE_REMINDER_TIMES = ("10:00", "13:00")
+DEFAULT_SUBSCRIBE_REMINDER_SCHEDULE = (
+    {"time": "10:00", "label": "10:00 申购提醒"},
+    {"time": "13:00", "label": "13:00 申购提醒"},
+)
 DEFAULT_LISTING_TRACKING_MAX_DAYS = 180
 DEFAULT_LISTING_REMINDER_SCHEDULE = (
     {"days_offset": -1, "time": "12:00", "label": "上市前一天 12:00"},
@@ -120,31 +123,59 @@ def load_data_source_config() -> dict[str, Any]:
     }
 
 
-def load_subscribe_reminder_times() -> tuple[str, ...]:
+def load_subscribe_reminder_schedule() -> list[dict[str, Any]]:
     config = load_config()
-    raw_times = config.get("subscribe_reminder_times", DEFAULT_SUBSCRIBE_REMINDER_TIMES)
-    if not isinstance(raw_times, (list, tuple)):
-        print("Warning: subscribe_reminder_times must be a list; using defaults", file=sys.stderr)
-        return DEFAULT_SUBSCRIBE_REMINDER_TIMES
+    raw_schedule = config.get("subscribe_reminder_schedule")
+    if raw_schedule is None:
+        raw_schedule = config.get("subscribe_reminder_times", list(DEFAULT_SUBSCRIBE_REMINDER_SCHEDULE))
+    if not isinstance(raw_schedule, (list, tuple)):
+        print("Warning: subscribe reminder schedule must be a list; using defaults", file=sys.stderr)
+        raw_schedule = list(DEFAULT_SUBSCRIBE_REMINDER_SCHEDULE)
 
-    valid_times: list[str] = []
+    schedule: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for item in raw_times:
-        if not isinstance(item, str):
-            print(f"Warning: ignore invalid reminder time: {item!r}", file=sys.stderr)
+    for index, item in enumerate(raw_schedule):
+        if isinstance(item, str):
+            reminder_time = item.strip()
+            label = f"{reminder_time} 申购提醒"
+        elif isinstance(item, dict):
+            raw_time = item.get("time")
+            if not isinstance(raw_time, str):
+                print(f"Warning: ignore invalid subscribe reminder item: {item!r}", file=sys.stderr)
+                continue
+            reminder_time = raw_time.strip()
+            raw_label = item.get("label")
+            label = raw_label.strip() if isinstance(raw_label, str) and raw_label.strip() else f"{reminder_time} 申购提醒"
+        else:
+            print(f"Warning: ignore invalid subscribe reminder item: {item!r}", file=sys.stderr)
             continue
-        value = item.strip()
-        if not TIME_PATTERN.fullmatch(value):
-            print(f"Warning: ignore invalid reminder time: {value}", file=sys.stderr)
+        if not TIME_PATTERN.fullmatch(reminder_time):
+            print(f"Warning: ignore invalid subscribe reminder time: {reminder_time}", file=sys.stderr)
             continue
-        if value not in seen:
-            valid_times.append(value)
-            seen.add(value)
+        if reminder_time in seen:
+            continue
+        schedule.append({
+            "time": reminder_time,
+            "label": label,
+            "tag": f"{reminder_time.replace(':', '')}_{index}",
+        })
+        seen.add(reminder_time)
 
-    if not valid_times:
-        print("Warning: no valid subscribe reminder time configured; using defaults", file=sys.stderr)
-        return DEFAULT_SUBSCRIBE_REMINDER_TIMES
-    return tuple(valid_times)
+    if schedule:
+        return schedule
+    print("Warning: no valid subscribe reminder schedule configured; using defaults", file=sys.stderr)
+    return [
+        {
+            "time": item["time"],
+            "label": item["label"],
+            "tag": f"{item['time'].replace(':', '')}_{index}",
+        }
+        for index, item in enumerate(DEFAULT_SUBSCRIBE_REMINDER_SCHEDULE)
+    ]
+
+
+def load_subscribe_reminder_times() -> tuple[str, ...]:
+    return tuple(item["time"] for item in load_subscribe_reminder_schedule())
 
 
 def load_listing_tracking_max_days() -> int:
@@ -678,15 +709,17 @@ def prepare_subscribe_today(create_tasks: bool = True) -> int:
 
     print(format_subscribe_message(subscribe_events))
     if create_tasks:
-        for slot in load_subscribe_reminder_times():
+        for reminder in load_subscribe_reminder_schedule():
+            slot = reminder["time"]
+            label = reminder["label"]
             hour, minute = map(int, slot.split(":"))
             run_at = datetime.combine(today_local(), clock_time(hour, minute), tzinfo=TIMEZONE)
             task_id = f"bond-subscribe-{today.replace('-', '')}-{slot.replace(':', '')}"
             upsert_once_message_task(
                 task_id,
-                f"可转债申购提醒 {today} {slot}",
+                f"可转债申购提醒 {today} {label}",
                 run_at,
-                format_subscribe_message(subscribe_events, slot),
+                format_subscribe_message(subscribe_events, label),
             )
     return 0
 
@@ -1287,6 +1320,7 @@ def plugin_info() -> int:
         key=lambda pair: str(pair[1].get("created_at") or ""),
     )
     listing_schedule = load_listing_reminder_schedule()
+    subscribe_schedule = load_subscribe_reminder_schedule()
 
     print("INFO: bond-calendar-reminder 待执行任务")
     print(f"生成时间：{now_local().isoformat()}")
@@ -1333,7 +1367,13 @@ def plugin_info() -> int:
     print("配置摘要")
     print(f"- 数据源：{'已配置' if data_source.get('calendar_url') else '未配置'}")
     print(f"- 提醒目标：{notify_target_status()}")
-    print(f"- 申购提醒时间：{', '.join(load_subscribe_reminder_times())}")
+    subscribe_schedule_text = ", ".join(
+        str(item["label"])
+        if str(item["label"]).startswith(str(item["time"]))
+        else f"{item['time']} {item['label']}"
+        for item in subscribe_schedule
+    )
+    print(f"- 申购提醒计划：{subscribe_schedule_text}")
     print(f"- 上市提醒计划：{len(listing_schedule)} 个提醒点")
     print(f"- 上市最长追踪天数：{load_listing_tracking_max_days()}")
     print(f"- 配置文件：{CONFIG_FILE}")

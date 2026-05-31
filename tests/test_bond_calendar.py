@@ -108,16 +108,49 @@ class BondCalendarTests(unittest.TestCase):
         self.assertNotIn("转债代码：", message)
         self.assertNotIn("详情：", message)
 
-    def test_subscribe_reminder_times_use_config_or_defaults(self) -> None:
+    def test_subscribe_reminder_schedule_use_config_or_defaults(self) -> None:
+        load_schedule = self.ns["load_subscribe_reminder_schedule"]
         load_times = self.ns["load_subscribe_reminder_times"]
         with redirect_stderr(StringIO()):
-            load_times.__globals__["load_config"] = lambda: {}
+            load_schedule.__globals__["load_config"] = lambda: {}
+            self.assertEqual(
+                load_schedule(),
+                [
+                    {"time": "10:00", "label": "10:00 申购提醒", "tag": "1000_0"},
+                    {"time": "13:00", "label": "13:00 申购提醒", "tag": "1300_1"},
+                ],
+            )
             self.assertEqual(load_times(), ("10:00", "13:00"))
 
-            load_times.__globals__["load_config"] = lambda: {
-                "subscribe_reminder_times": ["09:30", "13:00", "09:30", "bad"]
+            load_schedule.__globals__["load_config"] = lambda: {
+                "subscribe_reminder_schedule": [
+                    {"time": "09:30", "label": "上午提醒"},
+                    {"time": "13:00", "label": "下午提醒"},
+                    {"time": "09:30", "label": "重复提醒"},
+                    {"time": "bad", "label": "错误时间"},
+                    {"label": "缺少时间"},
+                ]
             }
+            self.assertEqual(
+                load_schedule(),
+                [
+                    {"time": "09:30", "label": "上午提醒", "tag": "0930_0"},
+                    {"time": "13:00", "label": "下午提醒", "tag": "1300_1"},
+                ],
+            )
             self.assertEqual(load_times(), ("09:30", "13:00"))
+
+            load_schedule.__globals__["load_config"] = lambda: {
+                "subscribe_reminder_times": ["08:45", "13:00", "08:45", "bad"]
+            }
+            self.assertEqual(
+                load_schedule(),
+                [
+                    {"time": "08:45", "label": "08:45 申购提醒", "tag": "0845_0"},
+                    {"time": "13:00", "label": "13:00 申购提醒", "tag": "1300_1"},
+                ],
+            )
+            self.assertEqual(load_times(), ("08:45", "13:00"))
 
     def test_prepare_subscribe_today_uses_stable_task_ids(self) -> None:
         prepare = self.ns["prepare_subscribe_today"]
@@ -139,7 +172,10 @@ class BondCalendarTests(unittest.TestCase):
         prepare.__globals__["today_local"] = lambda: date(2026, 3, 5)
         prepare.__globals__["now_local"] = lambda: self.ns["datetime"](2026, 3, 5, 7, 0, tzinfo=self.ns["TIMEZONE"])
         prepare.__globals__["write_json"] = lambda path, data: None
-        prepare.__globals__["load_subscribe_reminder_times"] = lambda: ("09:30", "13:00")
+        prepare.__globals__["load_subscribe_reminder_schedule"] = lambda: [
+            {"time": "09:30", "label": "上午申购提醒", "tag": "0930_0"},
+            {"time": "13:00", "label": "下午申购提醒", "tag": "1300_1"},
+        ]
         prepare.__globals__["upsert_once_message_task"] = (
             lambda task_id, name, run_at, content: created.append((task_id, run_at.strftime("%H:%M"))) or True
         )
@@ -419,10 +455,12 @@ class BondCalendarTests(unittest.TestCase):
             },
             "receiver": "wxid_sensitive",
             "notify_session_id": "session_sensitive",
-            "subscribe_reminder_times": ["09:30"],
+            "subscribe_reminder_schedule": [{"time": "09:30", "label": "上午提醒"}],
             "listing_tracking_max_days": 90,
         }
-        info.__globals__["load_subscribe_reminder_times"] = lambda: ("09:30",)
+        info.__globals__["load_subscribe_reminder_schedule"] = lambda: [
+            {"time": "09:30", "label": "上午提醒", "tag": "0930_0"}
+        ]
         info.__globals__["load_listing_tracking_max_days"] = lambda: 90
         info.__globals__["load_listing_reminder_schedule"] = lambda: [
             {"days_offset": 0, "time": "09:00", "label": "开盘前", "tag": "open"}

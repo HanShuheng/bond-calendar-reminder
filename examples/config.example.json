@@ -7,7 +7,10 @@
       "Referer": "https://example.com/calendar"
     }
   },
-  "subscribe_reminder_times": ["10:00", "13:00"],
+  "subscribe_reminder_schedule": [
+    {"time": "10:00", "label": "10:00 申购提醒"},
+    {"time": "13:00", "label": "13:00 申购提醒"}
+  ],
   "listing_reminder_schedule": [
     {"days_offset": -1, "time": "12:00", "label": "上市前一天 12:00"},
     {"days_offset": 0, "time": "08:30", "label": "上市当天 08:30，开盘前 1 小时"},

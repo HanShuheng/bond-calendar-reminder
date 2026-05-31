@@ -17,9 +17,11 @@ metadata:
   entrypoint: scripts/bond_calendar.py
   config_file: ~/cow/bond_reminders/config.json
   optional_config:
-    - subscribe_reminder_times
+    - subscribe_reminder_schedule
     - listing_reminder_schedule
     - listing_tracking_max_days
+  legacy_optional_config:
+    - subscribe_reminder_times
   runtime_data_dir: ~/cow/bond_reminders
   scheduler_file: ~/cow/scheduler/tasks.json
   timezone: Asia/Shanghai
@@ -32,10 +34,12 @@ metadata:
       - data_source.detail_url_template
       - data_source.headers
   reminders:
-    subscribe_times:
-      - "10:00"
-      - "13:00"
-    subscribe_times_config: subscribe_reminder_times
+    subscribe_schedule:
+      - time: "10:00"
+        label: "10:00 申购提醒"
+      - time: "13:00"
+        label: "13:00 申购提醒"
+    subscribe_schedule_config: subscribe_reminder_schedule
     listing_times:
       - 上市前一天 12:00
       - 上市当天 08:30
@@ -52,6 +56,12 @@ allowed-tools: terminal scheduler file
 
 这是 CowAgent 的可转债日历技能。完整安装、数据源配置和维护说明见 `README.md`。
 
+## 免责声明
+
+本技能仅用于学习、研究和个人自动化实践，不构成投资建议、数据服务承诺或任何形式的金融服务。第三方数据源的可用性、准确性、及时性、授权和合规性由用户自行确认。
+
+用户接入、访问、抓取、调用或使用第三方数据源，以及基于查询结果或提醒做出的任何操作，均由用户自行判断并承担全部责任；由此产生的法律、合规、交易、资金、账号或其他风险，均与本项目及作者无关。
+
 ## 能力边界
 
 - 查询指定日期或日期范围内的可转债申购事项。
@@ -67,6 +77,7 @@ allowed-tools: terminal scheduler file
 - 已经过点的上市提醒不会补建；所有上市提醒点都过期时记录为 `expired`。
 - 数据源地址、详情页模板、请求头均由用户在配置文件中提供。
 - 不接入券商账户，不判断用户是否真实中签，不提供投资建议。
+- 不承担用户接入数据源、使用提醒或进行交易操作产生的任何法律、合规、资金或账号风险。
 
 ## 用户意图
 
@@ -287,7 +298,8 @@ python {baseDir}/scripts/bond_calendar.py info
 ```text
 今日有可转债申购，已为你安排提醒。
 
-提醒时间：{subscribe_reminder_times}
+提醒计划：
+{subscribe_reminder_items}
 
 {subscribe_items}
 ```

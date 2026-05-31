@@ -4,6 +4,12 @@ CowAgent 可转债申购与上市提醒技能。
 
 本技能从用户配置的可转债日历数据源读取数据，支持查询申购日、查询上市日、记录中签转债，并通过 CowAgent scheduler 创建一次性提醒任务。
 
+## 免责声明
+
+本项目仅用于学习、研究和个人自动化实践，不构成投资建议、数据服务承诺或任何形式的金融服务。项目不保证第三方数据源的可用性、准确性、及时性或合规性。
+
+用户接入、访问、抓取、调用或使用第三方数据源，以及基于查询结果或提醒做出的任何操作，均由用户自行判断并承担全部责任；由此产生的法律、合规、交易、资金、账号或其他风险，均与本项目及作者无关。
+
 ## 快速开始
 
 ### 1. 安装技能
@@ -107,7 +113,7 @@ crontab -e
 | 入口脚本 | `scripts/bond_calendar.py` |
 | 配置文件 | `~/cow/bond_reminders/config.json` |
 | 运行数据目录 | `~/cow/bond_reminders` |
-| 默认申购提醒时间 | `10:00`、`13:00` |
+| 默认申购提醒计划 | `10:00 申购提醒`、`13:00 申购提醒` |
 | 默认上市提醒计划 | 上市前一天 `12:00`、上市当天 `08:30`、上市当天 `13:00` |
 
 ## 功能
@@ -121,7 +127,7 @@ crontab -e
 - 可查看当前有效的申购提醒、上市提醒和待追踪上市事项。
 - 可查看插件配置、crontab、scheduler、缓存和追踪状态。
 - 自动创建申购提醒和上市提醒。
-- 申购提醒时间可在配置文件中自定义，默认 `10:00` 和 `13:00`。
+- 申购提醒计划可在配置文件中自定义，默认 `10:00` 和 `13:00`。
 - 上市提醒计划可在配置文件中自定义，支持任意条数。
 - 数据源地址、详情页模板和请求头由用户配置，不写死在脚本中。
 
@@ -131,6 +137,7 @@ crontab -e
 - 不判断用户是否真实中签。
 - 不提供投资建议。
 - 不保证第三方日历数据实时、完整或准确。
+- 不承担用户接入数据源、使用提醒或进行交易操作产生的任何法律、合规、资金或账号风险。
 
 ## 目录结构
 
@@ -230,7 +237,10 @@ cp examples/config.example.json ~/cow/bond_reminders/config.json
       "Referer": "https://example.com/calendar"
     }
   },
-  "subscribe_reminder_times": ["10:00", "13:00"],
+  "subscribe_reminder_schedule": [
+    {"time": "10:00", "label": "10:00 申购提醒"},
+    {"time": "13:00", "label": "13:00 申购提醒"}
+  ],
   "listing_reminder_schedule": [
     {"days_offset": -1, "time": "12:00", "label": "上市前一天 12:00"},
     {"days_offset": 0, "time": "08:30", "label": "上市当天 08:30，开盘前 1 小时"},
@@ -265,9 +275,20 @@ cp examples/config.example.json ~/cow/bond_reminders/config.json
 
 | 字段 | 说明 |
 | --- | --- |
-| `subscribe_reminder_times` | 可选。当天申购提醒时间，格式为 `HH:MM`，默认 `["10:00", "13:00"]` |
+| `subscribe_reminder_schedule` | 可选。当天申购提醒计划，每项包含 `time`、`label`，默认 `10:00` 和 `13:00` |
 | `listing_reminder_schedule` | 可选。上市提醒计划，每项包含 `days_offset`、`time`、`label` |
 | `listing_tracking_max_days` | 可选。暂未公布上市日时的最长追踪天数，默认 `180` |
+
+`subscribe_reminder_schedule` 示例：
+
+```json
+[
+  {"time": "10:00", "label": "10:00 申购提醒"},
+  {"time": "13:00", "label": "13:00 申购提醒"}
+]
+```
+
+`time` 使用 `HH:MM` 格式，`label` 会显示在 scheduler 任务名和提醒内容中。旧版 `subscribe_reminder_times` 仍兼容，但新配置建议统一使用 `subscribe_reminder_schedule`。
 
 `listing_reminder_schedule` 示例：
 
@@ -330,7 +351,7 @@ python3 scripts/bond_calendar.py find-subscribe --query 阳谷转债
 python3 scripts/bond_calendar.py prepare-subscribe-today
 ```
 
-这个命令会查询当天申购事项并写入 `daily_subscribe.json`。如果当天有申购事项，会按 `subscribe_reminder_times` 创建一次性提醒任务；未配置时使用默认 `10:00` 和 `13:00`。
+这个命令会查询当天申购事项并写入 `daily_subscribe.json`。如果当天有申购事项，会按 `subscribe_reminder_schedule` 创建一次性提醒任务；未配置时使用默认 `10:00` 和 `13:00`。
 如果运行时某个提醒时间已经过去，脚本不会再创建该过去时间的提醒。
 
 只刷新缓存、不创建提醒：
@@ -409,7 +430,7 @@ python3 scripts/bond_calendar.py info
 - 当前 crontab 中未注释且包含 `bond_calendar.py` 的自动触发任务。
 - `watchlist.json` 中 `pending` / `needs_confirmation` 的中签上市追踪。
 - `daily_subscribe.json` 的日期、状态、生成时间、事项数。
-- 简短配置摘要：数据源、提醒目标识别状态、申购提醒时间、上市提醒计划数量、最长追踪天数和关键文件路径。
+- 简短配置摘要：数据源、提醒目标识别状态、申购提醒计划、上市提醒计划数量、最长追踪天数和关键文件路径。
 
 `info` 不展示真实 `receiver`、session id、token 或 context token。如果提醒目标无法自动识别，会提示“自动提醒任务无法创建”。
 
@@ -463,7 +484,7 @@ crontab -e
 
 | 时间 | 命令 | 说明 |
 | --- | --- | --- |
-| 每天 `07:00` | `prepare-subscribe-today` | 查询当天申购事项，有申购时按 `subscribe_reminder_times` 创建提醒 |
+| 每天 `07:00` | `prepare-subscribe-today` | 查询当天申购事项，有申购时按 `subscribe_reminder_schedule` 创建提醒 |
 | 每天 `07:05` | `check-tracked-listings` | 检查已记录的中签转债，查到上市日期后创建上市提醒 |
 
 ## 数据文件
