@@ -578,6 +578,44 @@ class BondCalendarTests(unittest.TestCase):
         self.assertEqual(load_config(), {})
         self.assertEqual(calls, [])
 
+    def test_extract_skill_version_prefers_metadata_version(self) -> None:
+        extract = self.ns["extract_skill_version"]
+        text = """---
+name: bond-calendar-reminder
+version: 9.9.9
+metadata:
+  author: xixilili
+  version: 0.1.1
+---
+"""
+        self.assertEqual(extract(text), "0.1.1")
+
+    def test_compare_versions_handles_patch_numbers(self) -> None:
+        compare = self.ns["compare_versions"]
+        self.assertLess(compare("0.1.0", "0.1.1"), 0)
+        self.assertEqual(compare("0.1.1", "0.1.1"), 0)
+        self.assertGreater(compare("0.2.0", "0.1.9"), 0)
+
+    def test_check_update_reports_available_update(self) -> None:
+        check_update = self.ns["check_update"]
+
+        class FakeResponse:
+            text = "metadata:\n  version: 0.1.2\n"
+
+            def raise_for_status(self) -> None:
+                return None
+
+        check_update.__globals__["local_skill_version"] = lambda: "0.1.1"
+        check_update.__globals__["requests"].get = lambda *args, **kwargs: FakeResponse()
+
+        with redirect_stdout(StringIO()) as output:
+            self.assertEqual(check_update("https://example.com/SKILL.md"), 0)
+
+        text = output.getvalue()
+        self.assertIn("当前版本：0.1.1", text)
+        self.assertIn("最新版本：0.1.2", text)
+        self.assertIn("建议更新", text)
+
 
 if __name__ == "__main__":
     unittest.main()

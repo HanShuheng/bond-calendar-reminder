@@ -35,7 +35,7 @@ CowAgent 专属可转债申购与上市提醒 Skill。
 
 ## 项目状态
 
-当前版本为 `0.1.0`，属于早期可用版本。接口、配置字段和 CowAgent Skill 约定仍可能调整。建议个人使用前先在测试环境验证配置和提醒链路。
+当前版本为 `0.1.1`，属于早期可用版本。接口、配置字段和 CowAgent Skill 约定仍可能调整。建议个人使用前先在测试环境验证配置和提醒链路。
 
 ## 工作原理
 
@@ -59,6 +59,7 @@ CowAgent 整理脚本输出并回复用户 / 执行后续提醒
 bond-calendar-reminder/
 ├── SKILL.md                  # CowAgent Skill 元数据、意图映射和回复模板
 ├── README.md                 # 项目说明
+├── CHANGELOG.md              # 版本变化记录
 ├── LICENSE                   # MIT License
 ├── requirements.txt          # Python 依赖
 ├── examples/
@@ -305,11 +306,52 @@ python3 scripts/bond_calendar.py list-reminders
 python3 scripts/bond_calendar.py info
 ```
 
+查看当前版本：
+
+```bash
+python3 scripts/bond_calendar.py version
+```
+
+检查是否有新版本：
+
+```bash
+python3 scripts/bond_calendar.py check-update
+```
+
 检查追踪列表：
 
 ```bash
 python3 scripts/bond_calendar.py check-tracked-listings
 ```
+
+## 升级与版本管理
+
+本项目用 `SKILL.md` 中的 `metadata.version` 作为 Skill 版本号，并在 `CHANGELOG.md` 记录每次发布的变化。
+
+用户可以主动检查更新：
+
+```bash
+cd ~/cow/skills/bond-calendar-reminder
+python3 scripts/bond_calendar.py check-update
+```
+
+如果输出提示有新版本，按下面步骤升级：
+
+```bash
+cd ~/cow/skills/bond-calendar-reminder
+git pull
+python3 -m pip install -r requirements.txt
+python3 scripts/bond_calendar.py info
+```
+
+如果 CowAgent 使用自己的虚拟环境，请把 `python3` 替换为 CowAgent 的 Python 路径。
+
+维护者发布新版本时建议遵循：
+
+1. 更新 `SKILL.md` 的 `metadata.version`。
+2. 更新 `CHANGELOG.md`。
+3. 提交代码并打 tag，例如 `v0.1.1`。
+4. 在 GitHub Release 中复制对应版本的 changelog。
 
 ## 自动化
 

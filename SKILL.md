@@ -5,7 +5,7 @@ license: MIT
 compatibility: CowAgent 技能系统；Python 3.10+；需要可访问用户配置的可转债日历 JSON 数据源；自动提醒依赖 CowAgent scheduler，crontab 仅用于可选的每日自动触发。
 metadata:
   author: xixilili
-  version: 0.1.0
+  version: 0.1.1
   language: zh-CN
   category: finance
   tags:
@@ -73,6 +73,7 @@ allowed-tools: terminal scheduler file
 - 取消中签上市追踪或已创建的上市提醒。
 - 查询当前有效的债券相关申购提醒、上市提醒和待追踪事项。
 - 查询可转债 skill 的待执行任务看板，包括 scheduler、crontab、缓存和追踪状态。
+- 查询当前 skill 版本，并主动检查 GitHub main 分支是否有更新。
 - 已经过点的申购提醒不会补建，避免产生过去时间任务。
 - 已经过点的上市提醒不会补建；所有上市提醒点都过期时记录为 `expired`。
 - 数据源地址、详情页模板、请求头均由用户在配置文件中提供。
@@ -221,6 +222,30 @@ python {baseDir}/scripts/bond_calendar.py info
 
 输出重点展示待执行事项：未来 enabled 的申购/上市 scheduler 任务、crontab 自动触发行、`pending` / `needs_confirmation` 上市追踪、当天申购缓存和简短配置摘要。不要要求用户理解或手动配置 `receiver`、`receiver_name`、`is_group`；它们只是 scheduler 兼容字段。
 
+### 查询版本和检查更新
+
+用户可能会说：
+
+```text
+这个可转债 skill 是什么版本？
+这个插件要不要更新？
+检查一下 bond-calendar-reminder 有没有新版本
+```
+
+只查询本地版本时执行：
+
+```bash
+python {baseDir}/scripts/bond_calendar.py version
+```
+
+用户明确要求检查更新时执行：
+
+```bash
+python {baseDir}/scripts/bond_calendar.py check-update
+```
+
+`check-update` 会读取本地 `SKILL.md` 版本，并检查 GitHub main 分支上的远端 `SKILL.md`。只有用户主动询问更新时才运行，不要在普通查询、提醒或自动任务中默认联网检查。
+
 ## 输出处理
 
 | 输出前缀 | 含义 | 回复策略 |
@@ -235,6 +260,7 @@ python {baseDir}/scripts/bond_calendar.py info
 | `EXPIRED` | 已查到上市日但提醒点均已过期 | 告知用户不会继续追踪 |
 | `ERROR` | 数据源或运行异常 | 告知用户稍后再试，不要声称已创建提醒 |
 | `INFO` | 待执行任务看板 | 保留看板结构，简短说明这是当前可转债 Skill 的待执行任务 |
+| `INFO` | 版本或更新检查结果 | 告知当前版本、最新版本，以及是否建议执行 `git pull` |
 
 ## 微信回复模板
 
@@ -506,4 +532,6 @@ python scripts/bond_calendar.py list-reminders
 python scripts/bond_calendar.py info
 python scripts/bond_calendar.py prepare-subscribe-today
 python scripts/bond_calendar.py check-tracked-listings
+python scripts/bond_calendar.py version
+python scripts/bond_calendar.py check-update
 ```

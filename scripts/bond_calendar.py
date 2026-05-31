@@ -58,6 +58,9 @@ DEFAULT_LISTING_REMINDER_SCHEDULE = (
 TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 SENSITIVE_KEY_PATTERN = re.compile(r"(authorization|cookie|token|key|secret|password)", re.IGNORECASE)
 BOND_TASK_PREFIXES = ("bond-subscribe-", "bond-listing-")
+DEFAULT_UPDATE_CHECK_URL = (
+    "https://raw.githubusercontent.com/HanShuheng/bond-calendar-reminder/main/SKILL.md"
+)
 
 
 def now_local() -> datetime:
@@ -87,6 +90,85 @@ def write_json(path: Path, data: Any) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(path)
+
+
+def extract_skill_version(text: str) -> str | None:
+    in_metadata = False
+    for raw_line in text.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if stripped == "metadata:":
+            in_metadata = True
+            continue
+        if in_metadata and line and not line.startswith((" ", "\t")):
+            in_metadata = False
+        if in_metadata:
+            match = re.match(r"^\s+version:\s*['\"]?([^'\"\s]+)", line)
+            if match:
+                return match.group(1)
+    match = re.search(r"(?m)^version:\s*['\"]?([^'\"\s]+)", text)
+    return match.group(1) if match else None
+
+
+def local_skill_version() -> str:
+    skill_file = Path(__file__).resolve().parents[1] / "SKILL.md"
+    try:
+        version = extract_skill_version(skill_file.read_text(encoding="utf-8"))
+    except Exception:
+        version = None
+    return version or "unknown"
+
+
+def version_key(version: str) -> tuple[int, ...]:
+    parts = re.findall(r"\d+", version)
+    return tuple(int(part) for part in parts) if parts else (0,)
+
+
+def compare_versions(current: str, latest: str) -> int:
+    current_parts = list(version_key(current))
+    latest_parts = list(version_key(latest))
+    width = max(len(current_parts), len(latest_parts))
+    current_parts.extend([0] * (width - len(current_parts)))
+    latest_parts.extend([0] * (width - len(latest_parts)))
+    if current_parts < latest_parts:
+        return -1
+    if current_parts > latest_parts:
+        return 1
+    return 0
+
+
+def show_version() -> int:
+    print(f"INFO 当前版本：{local_skill_version()}")
+    return 0
+
+
+def check_update(remote_url: str = DEFAULT_UPDATE_CHECK_URL) -> int:
+    current = local_skill_version()
+    print(f"INFO 当前版本：{current}")
+    if requests is None:
+        print("ERROR: 缺少 requests 依赖，无法检查远端版本")
+        return 1
+    try:
+        response = requests.get(remote_url, headers=DEFAULT_HEADERS, timeout=10)
+        response.raise_for_status()
+    except RequestException as exc:
+        print(f"ERROR: 检查远端版本失败：{exc}")
+        return 1
+
+    latest = extract_skill_version(response.text)
+    if not latest:
+        print("ERROR: 远端 SKILL.md 中未找到版本号")
+        return 1
+
+    print(f"INFO 最新版本：{latest}")
+    comparison = compare_versions(current, latest)
+    if comparison < 0:
+        print("INFO 建议更新：cd ~/cow/skills/bond-calendar-reminder && git pull")
+    elif comparison == 0:
+        print("INFO 当前已是最新版本")
+    else:
+        print("INFO 当前版本高于远端版本，可能正在使用本地开发版")
+    return 0
 
 
 def load_config() -> dict[str, Any]:
@@ -1419,10 +1501,21 @@ def main() -> int:
     sub.add_parser("check-tracked-listings")
     sub.add_parser("list-reminders")
     sub.add_parser("info")
+    sub.add_parser("version")
+    p_check_update = sub.add_parser("check-update")
+    p_check_update.add_argument(
+        "--remote-url",
+        default=DEFAULT_UPDATE_CHECK_URL,
+        help="远端 SKILL.md 地址，默认检查 GitHub main 分支",
+    )
 
     args = parser.parse_args()
-    ensure_dirs()
+    if args.command == "version":
+        return show_version()
+    if args.command == "check-update":
+        return check_update(args.remote_url)
 
+    ensure_dirs()
     if args.command == "prepare-subscribe-today":
         return prepare_subscribe_today(create_tasks=not args.no_create_tasks)
     if args.command == "send-prepared-subscribe":
