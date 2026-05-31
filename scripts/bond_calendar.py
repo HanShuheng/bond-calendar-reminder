@@ -59,7 +59,7 @@ TIME_PATTERN = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 SENSITIVE_KEY_PATTERN = re.compile(r"(authorization|cookie|token|key|secret|password)", re.IGNORECASE)
 BOND_TASK_PREFIXES = ("bond-subscribe-", "bond-listing-")
 DEFAULT_UPDATE_CHECK_URL = (
-    "https://raw.githubusercontent.com/HanShuheng/bond-calendar-reminder/main/SKILL.md"
+    "https://raw.githubusercontent.com/HanShuheng/bond-calendar-reminder-skill/main/SKILL.md"
 )
 
 
@@ -163,7 +163,7 @@ def check_update(remote_url: str = DEFAULT_UPDATE_CHECK_URL) -> int:
     print(f"INFO 最新版本：{latest}")
     comparison = compare_versions(current, latest)
     if comparison < 0:
-        print("INFO 建议更新：cd ~/cow/skills/bond-calendar-reminder && git pull")
+        print("INFO 建议更新：cd ~/cow/skills/bond-calendar-reminder-skill && git pull")
     elif comparison == 0:
         print("INFO 当前已是最新版本")
     else:
@@ -1404,7 +1404,7 @@ def plugin_info() -> int:
     listing_schedule = load_listing_reminder_schedule()
     subscribe_schedule = load_subscribe_reminder_schedule()
 
-    print("INFO: bond-calendar-reminder 待执行任务")
+    print("INFO: bond-calendar-reminder-skill 待执行任务")
     print(f"生成时间：{now_local().isoformat()}")
     print("时区：Asia/Shanghai")
     print("")

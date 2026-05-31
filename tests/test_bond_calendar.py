@@ -509,7 +509,7 @@ class BondCalendarTests(unittest.TestCase):
             self.assertEqual(info(), 0)
 
         text = output.getvalue()
-        self.assertIn("INFO: bond-calendar-reminder 待执行任务", text)
+        self.assertIn("INFO: bond-calendar-reminder-skill 待执行任务", text)
         self.assertIn("scheduler 待执行申购提醒", text)
         self.assertIn("scheduler 待执行上市提醒", text)
         self.assertIn("申购提醒", text)
@@ -581,7 +581,7 @@ class BondCalendarTests(unittest.TestCase):
     def test_extract_skill_version_prefers_metadata_version(self) -> None:
         extract = self.ns["extract_skill_version"]
         text = """---
-name: bond-calendar-reminder
+name: bond-calendar-reminder-skill
 version: 9.9.9
 metadata:
   author: xixilili

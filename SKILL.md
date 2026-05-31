@@ -1,5 +1,5 @@
 ---
-name: bond-calendar-reminder
+name: bond-calendar-reminder-skill
 description: 可转债申购与上市提醒。支持按日期或日期范围查询申购、按债券名/转债代码/申购代码/配售代码查询上市日期，并为中签转债创建上市提醒。
 license: MIT
 compatibility: CowAgent 技能系统；Python 3.10+；需要可访问用户配置的可转债日历 JSON 数据源；自动提醒依赖 CowAgent scheduler，crontab 仅用于可选的每日自动触发。
@@ -51,7 +51,7 @@ metadata:
 allowed-tools: terminal scheduler file
 ---
 
-# bond-calendar-reminder
+# bond-calendar-reminder-skill
 
 这是 CowAgent 的可转债日历技能。完整安装、数据源配置和维护说明见 `README.md`。
 
@@ -228,7 +228,7 @@ python {baseDir}/scripts/bond_calendar.py info
 ```text
 这个可转债 skill 是什么版本？
 这个插件要不要更新？
-检查一下 bond-calendar-reminder 有没有新版本
+检查一下 bond-calendar-reminder-skill 有没有新版本
 ```
 
 只查询本地版本时执行：

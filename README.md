@@ -1,4 +1,4 @@
-# bond-calendar-reminder
+# bond-calendar-reminder-skill
 
 CowAgent 专属可转债申购与上市提醒 Skill。
 
@@ -56,7 +56,7 @@ CowAgent 整理脚本输出并回复用户 / 执行后续提醒
 仓库结构：
 
 ```text
-bond-calendar-reminder/
+bond-calendar-reminder-skill/
 ├── SKILL.md                  # CowAgent Skill 元数据、意图映射和回复模板
 ├── README.md                 # 项目说明
 ├── CHANGELOG.md              # 版本变化记录
@@ -110,33 +110,33 @@ Python 依赖见 `requirements.txt`。
 在 CowAgent 服务器上执行：
 
 ```bash
-cow skill install HanShuheng/bond-calendar-reminder
+cow skill install HanShuheng/bond-calendar-reminder-skill
 ```
 
 如果 CLI 不支持 GitHub shorthand，可以使用仓库地址：
 
 ```bash
-cow skill install https://github.com/HanShuheng/bond-calendar-reminder
+cow skill install https://github.com/HanShuheng/bond-calendar-reminder-skill
 ```
 
 ### 方式二：手动安装
 
 ```bash
 mkdir -p ~/cow/skills
-git clone https://github.com/HanShuheng/bond-calendar-reminder.git ~/cow/skills/bond-calendar-reminder
+git clone https://github.com/HanShuheng/bond-calendar-reminder-skill.git ~/cow/skills/bond-calendar-reminder-skill
 ```
 
 安装依赖：
 
 ```bash
-cd ~/cow/skills/bond-calendar-reminder
+cd ~/cow/skills/bond-calendar-reminder-skill
 python3 -m pip install -r requirements.txt
 ```
 
 如果 CowAgent 使用自己的虚拟环境，建议使用 CowAgent 的 Python：
 
 ```bash
-~/CowAgent/.venv/bin/python -m pip install -r ~/cow/skills/bond-calendar-reminder/requirements.txt
+~/CowAgent/.venv/bin/python -m pip install -r ~/cow/skills/bond-calendar-reminder-skill/requirements.txt
 ```
 
 ## 配置
@@ -156,13 +156,13 @@ mkdir -p ~/cow/bond_reminders
 使用通用模板：
 
 ```bash
-cp ~/cow/skills/bond-calendar-reminder/examples/config.example.json ~/cow/bond_reminders/config.json
+cp ~/cow/skills/bond-calendar-reminder-skill/examples/config.example.json ~/cow/bond_reminders/config.json
 ```
 
 如果你确认自己可以合规访问集思录可转债日历接口，也可以使用内置模板：
 
 ```bash
-cp ~/cow/skills/bond-calendar-reminder/examples/config.jisilu.example.json ~/cow/bond_reminders/config.json
+cp ~/cow/skills/bond-calendar-reminder-skill/examples/config.jisilu.example.json ~/cow/bond_reminders/config.json
 ```
 
 编辑配置：
@@ -229,7 +229,7 @@ export BOND_CALENDAR_URL="https://example.com/path/to/convert-bond-calendar.json
 ## 快速验证
 
 ```bash
-cd ~/cow/skills/bond-calendar-reminder
+cd ~/cow/skills/bond-calendar-reminder-skill
 python3 scripts/bond_calendar.py --help
 python3 scripts/bond_calendar.py info
 python3 scripts/bond_calendar.py find-subscribe --date 今天
@@ -329,14 +329,14 @@ python3 scripts/bond_calendar.py check-tracked-listings
 用户可以主动检查更新：
 
 ```bash
-cd ~/cow/skills/bond-calendar-reminder
+cd ~/cow/skills/bond-calendar-reminder-skill
 python3 scripts/bond_calendar.py check-update
 ```
 
 如果输出提示有新版本，按下面步骤升级：
 
 ```bash
-cd ~/cow/skills/bond-calendar-reminder
+cd ~/cow/skills/bond-calendar-reminder-skill
 git pull
 python3 -m pip install -r requirements.txt
 python3 scripts/bond_calendar.py info
@@ -362,8 +362,8 @@ crontab -e
 示例：
 
 ```cron
-0 7 * * * /usr/bin/python3 ~/cow/skills/bond-calendar-reminder/scripts/bond_calendar.py prepare-subscribe-today >> ~/cow/bond_reminders/bond_calendar.log 2>&1
-5 7 * * * /usr/bin/python3 ~/cow/skills/bond-calendar-reminder/scripts/bond_calendar.py check-tracked-listings >> ~/cow/bond_reminders/bond_calendar.log 2>&1
+0 7 * * * /usr/bin/python3 ~/cow/skills/bond-calendar-reminder-skill/scripts/bond_calendar.py prepare-subscribe-today >> ~/cow/bond_reminders/bond_calendar.log 2>&1
+5 7 * * * /usr/bin/python3 ~/cow/skills/bond-calendar-reminder-skill/scripts/bond_calendar.py check-tracked-listings >> ~/cow/bond_reminders/bond_calendar.log 2>&1
 ```
 
 如果 CowAgent 使用虚拟环境，请把 `/usr/bin/python3` 替换为 CowAgent 的 Python 路径。
