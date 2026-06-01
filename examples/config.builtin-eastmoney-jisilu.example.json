@@ -1,10 +1,29 @@
 {
-  "_comment": "只使用内置集思录日历示例适配器的配置。它仍然返回项目标准 BondEvent；使用前请自行确认授权和访问规则。",
+  "_comment": "内置示例适配器配置：东方财富日历为主，集思录日历兜底/交叉检查，东方财富 push2 用于上市日行情检查。",
   "calendar_strategy": {
     "type": "builtin",
     "adapters": [
       {
+        "type": "eastmoney",
+        "_comment": "主日历示例适配器。字段里包含申购日、中签结果公布日和上市日。",
+        "api_url": "https://datacenter-web.eastmoney.com/api/data/v1/get",
+        "params": {
+          "reportName": "RPT_BOND_CB_LIST",
+          "columns": "ALL",
+          "source": "WEB",
+          "client": "WEB",
+          "pageNumber": "1",
+          "pageSize": "2000",
+          "sortColumns": "PUBLIC_START_DATE,SECURITY_CODE",
+          "sortTypes": "-1,1"
+        },
+        "headers": {
+          "Referer": "https://data.eastmoney.com/xg/xg/?mkt=kzz"
+        }
+      },
+      {
         "type": "jisilu",
+        "_comment": "兜底/交叉检查日历示例适配器。使用前请自行确认授权和访问规则。",
         "calendar_url": "https://www.jisilu.cn/data/calendar/get_calendar_data/?qtype=CNV",
         "base_url": "https://www.jisilu.cn",
         "detail_url_template": "https://www.jisilu.cn/data/convert_bond_detail/{code}",
@@ -13,6 +32,18 @@
         }
       }
     ]
+  },
+  "quote_strategy": {
+    "_comment": "内置行情示例适配器，用于上市日 30% 涨幅检查。",
+    "type": "eastmoney_push2",
+    "api_url": "https://push2.eastmoney.com/api/qt/stock/get",
+    "params": {
+      "secid": "{eastmoney_secid}",
+      "fields": "f57,f58,f43,f60,f169,f170,f86"
+    },
+    "headers": {
+      "Referer": "https://data.eastmoney.com/kzz/"
+    }
   },
   "auto_setup_schedule": {
     "enabled": true,
@@ -58,8 +89,7 @@
     }
   ],
   "listing_limit_up_reminder": {
-    "_comment": "此文件只演示集思录日历适配器，不配置行情适配器，因此默认关闭上市日涨幅二次提醒。",
-    "enabled": false,
+    "enabled": true,
     "check_time": "14:50",
     "reminder_time": "14:55",
     "threshold_percent": 30,

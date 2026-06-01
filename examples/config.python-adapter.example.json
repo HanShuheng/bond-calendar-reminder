@@ -1,13 +1,14 @@
 {
-  "_comment": "空白通用模板。项目核心只依赖标准 BondEvent / BondQuote 协议；请按你的数据来源选择内置示例适配器或自定义 Python 适配器。",
+  "_comment": "用户自定义 Python 适配器配置示例。用户可以完全不用东方财富或集思录，只要适配器返回标准 BondEvent / BondQuote。",
   "calendar_strategy": {
-    "_comment": "日历策略负责返回标准 BondEvent 列表。自定义适配器示例见 config.python-adapter.example.json；内置东方财富 + 集思录示例见 config.builtin-eastmoney-jisilu.example.json。"
+    "type": "python",
+    "adapter": "my_bond_data.adapters:MyCalendarAdapter"
   },
   "quote_strategy": {
-    "_comment": "行情策略负责按转债代码返回标准 BondQuote。可使用自定义 Python 适配器，也可参考内置 eastmoney_push2 示例。"
+    "type": "python",
+    "adapter": "my_bond_data.adapters:MyQuoteAdapter"
   },
   "auto_setup_schedule": {
-    "_comment": "首次运行 skill 命令时自动检查并补齐 crontab 定时任务；设为 false 可关闭。修改时间后可运行 setup-schedule --replace --yes 生效。",
     "enabled": true,
     "daily_time": "07:00",
     "tracking_time": "07:05",

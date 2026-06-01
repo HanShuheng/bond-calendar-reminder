@@ -2,8 +2,18 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .coverage
+.env
+.env.*
 
 # Runtime data. Keep personal reminders and channel IDs out of source control.
 bond_reminders/
+/config.json
+/watchlist.json
+/daily_subscribe.json
+/daily_winning.json
+/bond_calendar.log
+config.local.json
+*cookie*
+*token*
 *.log
 *.tmp
