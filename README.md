@@ -40,7 +40,7 @@ CowAgent 专属可转债申购与上市提醒 Skill。
 
 ## 项目状态
 
-当前版本为 `0.2.0`，属于早期可用版本。接口、配置字段和 CowAgent Skill 约定仍可能调整。建议个人使用前先在测试环境验证配置和提醒链路。
+当前版本为 `0.2.1`，属于早期可用版本。接口、配置字段和 CowAgent Skill 约定仍可能调整。建议个人使用前先在测试环境验证配置和提醒链路。
 
 ## 工作原理
 
@@ -74,6 +74,7 @@ bond-calendar-reminder-skill/
 │   └── config.jisilu.example.json
 ├── references/
 │   ├── data-adapter-contract.md
+│   ├── cowagent-multi-instance-workspace.md
 │   ├── eastmoney-bond-fields.md
 │   ├── quote-data-source.md
 │   └── uninstall.md
@@ -163,6 +164,8 @@ python3 -m pip install -r requirements.txt
 - 显式选择内置示例适配器。
 - 接入自己的 Python 日历或行情适配器。
 
+如果一台服务器运行多个 CowAgent 实例，每个实例必须使用独立的 `COW_WORKSPACE`。所有会写配置、缓存、scheduler、crontab 或用户上下文的 skill 都需要按 workspace 隔离；详细说明见 `references/cowagent-multi-instance-workspace.md`。
+
 配置文件默认路径：
 
 ```text
@@ -203,66 +206,17 @@ cp ~/cow/skills/bond-calendar-reminder-skill/examples/config.python-adapter.exam
 nano ~/cow/bond_reminders/config.json
 ```
 
-配置字段：
+配置入口速查：
 
-| 字段 | 必填 | 说明 |
-| --- | --- | --- |
-| `calendar_strategy` | 否 | 日历数据策略。未配置时使用内置示例：东方财富 + 集思录 |
-| `calendar_strategy.type` | 否 | `python` 或 `builtin` |
-| `calendar_strategy.adapter` | `type=python` 时必填 | 用户自定义日历适配器模块路径，格式为 `module:Class` |
-| `calendar_strategy.adapters` | `type=builtin` 时可选 | 内置示例适配器列表，支持 `eastmoney`、`jisilu` |
-| `quote_strategy` | 否 | 行情数据策略。未配置时使用内置东方财富 push2 示例适配器 |
-| `quote_strategy.type` | 否 | `python`、`eastmoney_push2` 或 `normalized_json` |
-| `quote_strategy.adapter` | `type=python` 时必填 | 用户自定义行情适配器模块路径，格式为 `module:Class` |
-| `auto_setup_schedule` | 否 | 自动设置 crontab 的配置，默认启用 |
-| `auto_setup_schedule.daily_time` | 否 | 每日申购和中签结果公布检查时间，默认 `07:00` |
-| `auto_setup_schedule.tracking_time` | 否 | 每日上市追踪检查时间，默认 `07:05` |
-| `auto_setup_schedule.limit_up_time` | 否 | 上市日涨幅检查时间，默认 `14:50` |
-| `subscribe_reminder_schedule` | 否 | 当天申购提醒计划，每项包含 `time` 和 `label` |
-| `winning_reminder_schedule` | 否 | 中签结果公布日提醒计划，每项包含 `time` 和 `label` |
-| `listing_reminder_schedule` | 否 | 上市提醒计划，每项包含 `days_offset`、`time` 和 `label` |
-| `listing_limit_up_reminder` | 否 | 上市日涨停二次提醒配置；需定时执行 `check-listing-limit-up` |
-
-自定义 Python 适配器配置示例：
-
-```json
-{
-  "calendar_strategy": {
-    "type": "python",
-    "adapter": "my_bond_data.adapters:MyCalendarAdapter"
-  },
-  "quote_strategy": {
-    "type": "python",
-    "adapter": "my_bond_data.adapters:MyQuoteAdapter"
-  }
-}
-```
-
-## 数据源格式
-
-项目标准数据协议见 `references/data-adapter-contract.md`。核心业务只要求：
-
-- 日历适配器提供 `load_events() -> list[dict]`，返回标准 `BondEvent`。
-- 行情适配器提供 `get_quote(bond_code) -> dict | None`，返回标准 `BondQuote`。
-
-标准 `BondEvent` 最少需要：
-
-| 字段 | 说明 |
+| 目标 | 看哪里 |
 | --- | --- |
-| `event_type` | `subscribe`、`winning` 或 `listing` |
-| `date` | `YYYY-MM-DD` |
-| `bond_code` | 转债代码 |
-| `bond_name` | 转债简称 |
+| 只改提醒时间或自动检查时间 | `examples/config.example.json` |
+| 显式使用内置示例数据源 | `examples/config.builtin-eastmoney-jisilu.example.json` |
+| 接入自己的 Python 数据源 | `examples/config.python-adapter.example.json` 和 `references/data-adapter-contract.md` |
+| 查看内置东方财富字段映射 | `references/eastmoney-bond-fields.md` |
+| 查看内置行情示例 | `references/quote-data-source.md` |
 
-标准 `BondQuote` 最少需要：
-
-| 字段 | 说明 |
-| --- | --- |
-| `bond_code` | 转债代码 |
-| `last_price` | 最新价 |
-| `change_percent` | 涨跌幅百分比，例如 `30.0` 表示 `30%` |
-
-东方财富、集思录和 push2 字段语义分别见 `references/eastmoney-bond-fields.md` 和 `references/quote-data-source.md`。这些文档仅用于说明内置示例适配器，不是项目主协议。
+核心业务只认项目标准数据协议，不要求使用某个固定厂商接口。日历数据统一转成 `BondEvent`，行情数据统一转成 `BondQuote`；完整字段、适配器方法和示例代码见 `references/data-adapter-contract.md`。
 
 ## 快速验证
 
@@ -283,129 +237,24 @@ python3 scripts/bond_calendar.py info
 
 ## 常用命令
 
-查询申购：
+| 目标 | 命令 |
+| --- | --- |
+| 查询今日申购 | `python3 scripts/bond_calendar.py find-subscribe --date 今天` |
+| 按日期范围查申购 | `python3 scripts/bond_calendar.py find-subscribe --date "3月5号-3月10号"` |
+| 按名称或代码查申购 | `python3 scripts/bond_calendar.py find-subscribe --query 123270` |
+| 准备当天申购和中签结果公布提醒 | `python3 scripts/bond_calendar.py prepare-daily-reminders` |
+| 只刷新当天缓存，不创建提醒 | `python3 scripts/bond_calendar.py prepare-daily-reminders --no-create-tasks` |
+| 查询上市日期 | `python3 scripts/bond_calendar.py find-listing --query 123270` |
+| 记录中签并追踪上市日 | `python3 scripts/bond_calendar.py track-listing --query 123270` |
+| 检查上市日涨幅二次提醒 | `python3 scripts/bond_calendar.py check-listing-limit-up` |
+| 取消上市提醒或追踪 | `python3 scripts/bond_calendar.py cancel-listing --query 123270` |
+| 查看当前提醒和追踪 | `python3 scripts/bond_calendar.py list-reminders` |
+| 查看 Skill 状态看板 | `python3 scripts/bond_calendar.py info` |
+| 查看版本 | `python3 scripts/bond_calendar.py version` |
+| 检查更新 | `python3 scripts/bond_calendar.py check-update` |
+| 跳过某个版本 | `python3 scripts/bond_calendar.py skip-update --version 0.2.1` |
 
-```bash
-python3 scripts/bond_calendar.py find-subscribe --date 今天
-python3 scripts/bond_calendar.py find-subscribe --date "3月5号-3月10号"
-python3 scripts/bond_calendar.py find-subscribe --start 今天 --days 5
-python3 scripts/bond_calendar.py find-subscribe --query 123270
-python3 scripts/bond_calendar.py find-subscribe --date 今天 --query 阳谷转债
-```
-
-准备当天申购和中签结果公布提醒。每日自动任务推荐使用这一条，因为一次日历数据读取会同时包含申购日和中签结果公布日：
-
-```bash
-python3 scripts/bond_calendar.py prepare-daily-reminders
-```
-
-只刷新申购和中签结果公布缓存，不创建提醒：
-
-```bash
-python3 scripts/bond_calendar.py prepare-daily-reminders --no-create-tasks
-```
-
-单独准备当天申购提醒：
-
-```bash
-python3 scripts/bond_calendar.py prepare-subscribe-today
-```
-
-只刷新缓存，不创建提醒：
-
-```bash
-python3 scripts/bond_calendar.py prepare-subscribe-today --no-create-tasks
-```
-
-输出已缓存的申购提醒：
-
-```bash
-python3 scripts/bond_calendar.py send-prepared-subscribe --slot 10:00
-python3 scripts/bond_calendar.py send-prepared-subscribe --slot 12:30
-python3 scripts/bond_calendar.py send-prepared-subscribe --slot query
-```
-
-单独准备当天中签结果公布提醒：
-
-```bash
-python3 scripts/bond_calendar.py prepare-winning-today
-```
-
-只刷新中签结果公布缓存，不创建提醒：
-
-```bash
-python3 scripts/bond_calendar.py prepare-winning-today --no-create-tasks
-```
-
-输出已缓存的中签结果公布提醒：
-
-```bash
-python3 scripts/bond_calendar.py send-prepared-winning --slot 10:30
-python3 scripts/bond_calendar.py send-prepared-winning --slot 13:00
-python3 scripts/bond_calendar.py send-prepared-winning --slot query
-```
-
-查询上市日期：
-
-```bash
-python3 scripts/bond_calendar.py find-listing --query 123270
-python3 scripts/bond_calendar.py find-listing --query 阳谷转债
-```
-
-记录中签并追踪上市日：
-
-```bash
-python3 scripts/bond_calendar.py track-listing --query 123270
-```
-
-检查今日上市转债是否达到涨停二次提醒阈值，并在满足条件时创建 14:55 提醒：
-
-```bash
-python3 scripts/bond_calendar.py check-listing-limit-up
-python3 scripts/bond_calendar.py check-listing-limit-up --query 123270
-```
-
-取消上市提醒或追踪：
-
-```bash
-python3 scripts/bond_calendar.py cancel-listing --query 123270
-```
-
-查看当前债券提醒：
-
-```bash
-python3 scripts/bond_calendar.py list-reminders
-```
-
-查看 Skill 状态看板：
-
-```bash
-python3 scripts/bond_calendar.py info
-```
-
-查看当前版本：
-
-```bash
-python3 scripts/bond_calendar.py version
-```
-
-检查是否有新版本：
-
-```bash
-python3 scripts/bond_calendar.py check-update
-```
-
-跳过某个已提示的新版本：
-
-```bash
-python3 scripts/bond_calendar.py skip-update --version 0.2.1
-```
-
-检查追踪列表：
-
-```bash
-python3 scripts/bond_calendar.py check-tracked-listings
-```
+更完整的用户话术、命令映射和微信回复模板见 `SKILL.md`。
 
 ## 升级与版本管理
 
@@ -507,32 +356,7 @@ python3 scripts/bond_calendar.py setup-schedule --replace --yes \
 
 ## CowAgent 回复约定
 
-脚本输出使用固定协议，CowAgent 可按第一行决定回复策略。第一行格式必须是：
-
-```text
-STATUS: 简短摘要
-```
-
-`STATUS` 只使用下列表中的英文大写值；正文继续使用简体中文。
-
-| 输出前缀 | 含义 |
-| --- | --- |
-| `ALERT` | 有查询结果或提醒内容 |
-| `SCHEDULED` | 已创建提醒任务 |
-| `TRACKING` | 已加入追踪列表 |
-| `NO_ALERT` | 当前无匹配事项 |
-| `NOT_FOUND` | 未查到对应上市日期 |
-| `MULTIPLE_MATCHES` | 匹配到多个候选 |
-| `CANCELED` | 已取消上市提醒或追踪 |
-| `EXPIRED` | 已查到上市日但提醒点均已过期 |
-| `ERROR` | 数据源或运行异常 |
-| `INFO` | 当前 Skill 状态看板 |
-
-第二行起使用固定分节名，例如 `事项：`、`提醒计划：`、`候选：`、`跳过：`、`任务：`、`建议：`、`详情：`。列表项统一以 `- ` 开头；债券事项优先写成 `- 名称（代码）`；日期统一为 `YYYY-MM-DD`；任务时间统一为本地无时区 ISO 文本。
-
-`list-reminders` 和 `info` 的看板分节顺序固定为：申购提醒、中签结果公布提醒、上市提醒、待追踪上市、配置摘要、状态计数。其中“中签结果公布提醒”默认计划为 `10:30`、`13:00`，由 `prepare-winning-today` 创建。
-
-完整用户意图、命令映射和微信回复模板见 `SKILL.md`。
+脚本输出使用纯文本协议，第一行固定为 `STATUS: 简短摘要`，后续使用稳定分节，便于 CowAgent 生成微信回复。完整状态前缀、分节规则、用户意图映射和回复模板都维护在 `SKILL.md`，README 不再重复展开。
 
 ## 测试
 
@@ -578,8 +402,11 @@ python3 -m json.tool ~/cow/scheduler/tasks.json
 | 数据源报错 | 网络异常、接口临时不可用或返回格式变化 | 稍后重试，并保留日志用于排查 |
 | 数据源配置错误 | `calendar_strategy` 或 `quote_strategy` 配置不完整，或自定义适配器未返回标准字段 | 先删除自定义配置验证默认内置示例，或改用 `examples/config.builtin-eastmoney-jisilu.example.json` |
 
-## 安全与隐私
+## 安全与免责声明
 
+- 本项目使用 MIT License，详见 `LICENSE`。
+- 本项目仅用于学习、研究和个人自动化实践，不构成投资建议、数据服务承诺或任何形式的金融服务。
+- 本项目不附带、代理或保证任何第三方金融数据源；使用者应自行确认数据源服务条款、访问频率限制、授权要求和当地法律法规。
 - 不要提交个人 `config.json`、`watchlist.json`、`daily_subscribe.json`、`daily_winning.json`、`update_check.json`、日志、token、cookie、Authorization header 或其他敏感信息。
 - 不要把个人服务器路径、账号信息或私有数据源地址写死进代码。
 - `calendar_strategy` / `quote_strategy` 中的 headers 可能包含敏感信息。公开 issue 或 PR 时请先脱敏。
@@ -599,16 +426,3 @@ python3 -m json.tool ~/cow/scheduler/tasks.json
 python3 -m unittest discover -s tests
 python3 -m py_compile scripts/bond_calendar.py scripts/bond_calendar_lib/*.py
 ```
-
-## 开源注意事项
-
-- 本项目使用 MIT License，详见 `LICENSE`。
-- 本项目不附带、代理或保证任何第三方金融数据源。
-- 示例配置仅用于说明字段结构，不代表对第三方数据源可用性、授权状态或合规性的承诺。
-- 使用者应自行确认第三方数据源的服务条款、访问频率限制、授权要求和当地法律法规。
-
-## 免责声明
-
-本项目仅用于学习、研究和个人自动化实践，不构成投资建议、数据服务承诺或任何形式的金融服务。项目不保证第三方数据源的可用性、准确性、及时性或合规性。
-
-用户接入、访问、抓取、调用或使用第三方数据源，以及基于查询结果或提醒做出的任何操作，均由用户自行判断并承担全部责任；由此产生的法律、合规、交易、资金、账号或其他风险，均与本项目及作者无关。

@@ -8,7 +8,7 @@ from typing import Any
 
 from .settings import (
     BOND_TASK_PREFIXES, DATA_DIR, DEFAULT_CRON_SCHEDULE, PROJECT_ROOT, TASKS_FILE,
-    TIMEZONE, TIME_PATTERN, WEIXIN_CREDS_FILE, now_local,
+    TIMEZONE, TIME_PATTERN, WEIXIN_CREDS_FILE, WORKSPACE, now_local,
 )
 from .storage import load_config, read_json, write_json
 
@@ -197,9 +197,10 @@ def build_cron_line(command: str, run_time: str, python_bin: str | None = None) 
     python_path = python_bin or sys.executable or "python3"
     script_path = PROJECT_ROOT / "scripts" / "bond_calendar.py"
     log_path = DATA_DIR / "bond_calendar.log"
+    workspace_env = f"COW_WORKSPACE={shlex.quote(str(WORKSPACE))}"
     return (
         f"{minute} {hour} * * * "
-        f"{shlex.quote(str(python_path))} {shlex.quote(str(script_path))} {command} "
+        f"{workspace_env} {shlex.quote(str(python_path))} {shlex.quote(str(script_path))} {command} "
         f">> {shlex.quote(str(log_path))} 2>&1"
     )
 

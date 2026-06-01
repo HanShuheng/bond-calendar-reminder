@@ -5,7 +5,7 @@ license: MIT
 compatibility: CowAgent 技能系统；Python 3.10+；默认内置东方财富日历、集思录日历兜底和东方财富 push2 行情示例适配器；自动提醒依赖 CowAgent scheduler 和本机 crontab。
 metadata:
   author: xixilili
-  version: 0.2.0
+  version: 0.2.1
   language: zh-CN
   category: finance
   tags:
@@ -38,6 +38,7 @@ metadata:
       - JisiluCalendarAdapter
       - EastmoneyPush2QuoteAdapter
     example_references:
+      - references/cowagent-multi-instance-workspace.md
       - references/eastmoney-bond-fields.md
       - references/quote-data-source.md
       - references/uninstall.md
@@ -121,6 +122,7 @@ allowed-tools: terminal scheduler file
 ## 参考资料
 
 - `references/data-adapter-contract.md`：项目标准数据适配器协议。说明 `BondEvent`、`BondQuote`、Python 适配器方法、字段含义和示例代码。
+- `references/cowagent-multi-instance-workspace.md`：CowAgent 多实例与所有 skill 的 `COW_WORKSPACE` 隔离说明。说明多实例时如何隔离配置、scheduler、crontab、缓存、日志和用户上下文。
 - `references/eastmoney-bond-fields.md`：内置东方财富日历示例适配器字段参考。后续维护东方财富字段映射时参考这里。
 - `references/quote-data-source.md`：内置行情示例适配器参考。说明东方财富 push2 和 `normalized_json` HTTP 示例。
 - `references/uninstall.md`：卸载与清理指南。说明如何移除 crontab、scheduler 任务、运行数据和 skill 代码目录。

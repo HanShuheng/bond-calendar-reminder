@@ -4,18 +4,21 @@
 
 项目早期采用轻量级语义化版本约定。Skill 版本号存放在 `SKILL.md` 的 `metadata.version` 中。
 
-## 未发布
+## 0.2.1 - 2026-06-01
 
 ### 文档
 
 - 新增 `references/uninstall.md`，说明如何备份并清理 crontab、scheduler 任务、运行数据和 skill 代码目录。
 - 在 README 和 SKILL 中补充卸载与清理入口，方便用户停止使用时清空相关内容。
+- 新增 `references/cowagent-multi-instance-workspace.md`，记录多 CowAgent 实例下所有 skill 的 `COW_WORKSPACE`、crontab、scheduler 和用户上下文隔离要点。
+- 精简 README，移除与 `SKILL.md` 和 `references/` 重复展开的配置、数据协议、输出协议和免责声明说明。
 
 ### 变更
 
 - 新增用户交互命令的每日一次自动更新检查，发现新版本时提示用户是否更新。
 - 新增 `skip-update --version`，用于用户暂不更新时跳过指定版本，避免反复提示。
 - 规范 `setup-schedule` 输出，明确区分实际新增、已存在跳过和目标检查任务数量。
+- 生成 crontab 时显式写入当前 `COW_WORKSPACE`，避免多 CowAgent 实例共用默认 workspace。
 
 ## 0.2.0 - 2026-06-01
 

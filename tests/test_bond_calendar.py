@@ -970,6 +970,23 @@ class BondCalendarTests(unittest.TestCase):
         self.assertIn("check-tracked-listings", calls[-1]["input"])
         self.assertEqual(calls[-1]["input"].count("prepare-daily-reminders"), 1)
 
+    def test_build_cron_line_includes_workspace_env(self) -> None:
+        build_cron_line = self.ns["build_cron_line"]
+        build_cron_line.__globals__["WORKSPACE"] = Path("/tmp/cow-a")
+        build_cron_line.__globals__["DATA_DIR"] = Path("/tmp/cow-a/bond_reminders")
+        build_cron_line.__globals__["PROJECT_ROOT"] = Path("/tmp/cow-a/skills/bond-calendar-reminder-skill")
+
+        line = build_cron_line(
+            "prepare-daily-reminders",
+            "07:00",
+            "/root/CowAgent-A/.venv/bin/python",
+        )
+
+        self.assertTrue(line.startswith("00 07 * * * COW_WORKSPACE=/tmp/cow-a "))
+        self.assertIn("/root/CowAgent-A/.venv/bin/python", line)
+        self.assertIn("/tmp/cow-a/skills/bond-calendar-reminder-skill/scripts/bond_calendar.py", line)
+        self.assertIn(">> /tmp/cow-a/bond_reminders/bond_calendar.log", line)
+
     def test_setup_schedule_previews_without_writing_crontab(self) -> None:
         setup = self.ns["setup_schedule"]
         setup.__globals__["default_cron_jobs"] = lambda *args, **kwargs: [
